@@ -5,6 +5,7 @@ Reports.
 """
 
 # System Imports
+import os
 import os.path
 
 # External Imports
@@ -24,6 +25,8 @@ __all__ = [
 DEFAULT_PATH = "test-output.xml"
 DEFAULT_COV_PATH = "test-cov.xml"
 
+JOB_ID = os.getenv('BUILDKITE_JOB_ID')
+LABEL = os.getenv('BUILDKITE_LABEL')
 
 def pytest_configure(config):
     """
@@ -100,8 +103,16 @@ def _buildkite_annotate(content, style="success", context=None):
     """
     Call out to the buildkite-agent to pass a build annotation.
     """
-    if context is None:
-        context = "ctx-%s" % (style,)
+    if not os.getenv('CI'):
+        return
+
+    content = f"""
+# {LABEL}
+
+{content}
+"""
+
+    context = "ctx-%s-%s" % (JOB_ID, style,)
     agent = local["buildkite-agent"]
     _ = (
         agent["annotate", content, "--style", style, "--context", context, "--append"]
